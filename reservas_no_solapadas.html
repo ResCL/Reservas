@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reserva</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-4 text-center">Reservar horario</h1>
+    <form id="formReserva" class="space-y-4">
+      <label class="block">
+        Nombre:
+        <input type="text" name="nombre" required class="w-full border p-2 rounded mt-1" />
+      </label>
+      <label class="block">
+        Fecha:
+        <input type="date" name="fecha" required class="w-full border p-2 rounded mt-1" />
+      </label>
+      <label class="block">
+        Hora de inicio (entre 17:00 y 20:00):
+        <input type="time" name="hora" min="17:00" max="20:00" required class="w-full border p-2 rounded mt-1" />
+      </label>
+      <label class="block">
+        Duración:
+        <select name="duracion" required class="w-full border p-2 rounded mt-1">
+          <option value="60">1 hora</option>
+          <option value="90">90 minutos</option>
+          <option value="120">2 horas</option>
+        </select>
+      </label>
+      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded w-full hover:bg-blue-600">
+        Reservar
+      </button>
+    </form>
+    <div id="mensaje" class="mt-4 text-green-600 text-center hidden">¡Reserva enviada correctamente!</div>
+  </div>
+
+  <script>
+    (function() {
+      emailjs.init("tIWbsntVrqJC_5G8A");
+    })();
+
+    function parseTime(horaStr) {
+      const [h, m] = horaStr.split(":").map(Number);
+      return h * 60 + m;
+    }
+
+    function overlaps(start1, duration1, start2, duration2) {
+      const end1 = start1 + duration1;
+      const end2 = start2 + duration2;
+      return start1 < end2 && start2 < end1;
+    }
+
+    function getReservas(fecha) {
+      return JSON.parse(localStorage.getItem("reservas_" + fecha)) || [];
+    }
+
+    function guardarReserva(fecha, hora, duracion) {
+      const reservas = getReservas(fecha);
+      reservas.push({ hora, duracion });
+      localStorage.setItem("reservas_" + fecha, JSON.stringify(reservas));
+    }
+
+    document.getElementById("formReserva").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const nombre = form.nombre.value;
+      const fecha = form.fecha.value;
+      const hora = form.hora.value;
+      const duracion = parseInt(form.duracion.value);
+      const horaMin = parseTime(hora);
+
+      if (!fecha || !hora) {
+        alert("Debes rellenar todos los campos.");
+        return;
+      }
+
+      if (horaMin < 1020 || horaMin > 1200) {
+        alert("La hora debe estar entre las 17:00 y las 20:00.");
+        return;
+      }
+
+      const reservas = getReservas(fecha);
+      for (const r of reservas) {
+        const rMin = parseTime(r.hora);
+        if (overlaps(horaMin, duracion, rMin, parseInt(r.duracion))) {
+          alert("Este horario ya está reservado. Elige otro.");
+          return;
+        }
+      }
+
+      emailjs.send("service_ky4twdx", "template_t7wta3p", {
+        nombre,
+        fecha,
+        hora,
+        duracion
+      }).then(() => {
+        guardarReserva(fecha, hora, duracion);
+        document.getElementById("mensaje").classList.remove("hidden");
+        form.reset();
+      }, (err) => {
+        alert("Error al enviar reserva: " + JSON.stringify(err));
+      });
+    });
+  </script>
+</body>
+</html>
