@@ -93,6 +93,11 @@
         return;
       }
 
+      if (horaMin > 1170 && duracion > 60) {
+        alert("Después de las 19:30 solo se permite reservar 1 hora.");
+        return;
+      }
+
       const reservas = getReservas(fecha);
       for (const r of reservas) {
         const rMin = parseTime(r.hora);
