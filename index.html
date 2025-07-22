@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Reservas Club de Tenis Segovia</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 </head>
 <body class="bg-blue-50 min-h-screen flex flex-col items-center justify-start">
   <header class="bg-blue-700 w-full py-6 text-center text-white text-3xl font-bold shadow-md">
@@ -13,7 +12,7 @@
   <img src="logo.png" class="w-40 mb-4" />
   <main class="bg-white p-8 rounded shadow-lg w-full max-w-md mt-10 border border-blue-200">
     <h2 class="text-xl font-semibold mb-4 text-blue-700 text-center">Reserva tu horario</h2>
-    <form id="formReserva" class="space-y-4">
+    <form id="formReserva" action="https://formsubmit.co/rescl2025@outlook.es" method="POST" class="space-y-4">
       <label class="block text-blue-800">
         Nombre:
         <input type="text" name="nombre" required class="w-full border border-blue-300 p-2 rounded mt-1" />
@@ -34,6 +33,12 @@
           <option value="120">2 horas – 30€</option>
         </select>
       </label>
+
+      <!-- Opcional: redirección tras enviar -->
+      <input type="hidden" name="_next" value="https://tusitio.com/gracias.html">
+      <!-- Anti-spam -->
+      <input type="text" name="_honey" style="display:none">
+
       <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700">
         Reservar
       </button>
@@ -42,10 +47,6 @@
   </main>
 
   <script>
-    (function() {
-      emailjs.init("tIWbsntVrqJC_5G8A");
-    })();
-
     function parseTime(horaStr) {
       const [h, m] = horaStr.split(":").map(Number);
       return h * 60 + m;
@@ -75,26 +76,27 @@
     }
 
     document.getElementById("formReserva").addEventListener("submit", function(e) {
-      e.preventDefault();
       const form = e.target;
       const nombre = form.nombre.value;
       const fecha = form.fecha.value;
       const hora = form.hora.value;
       const duracion = parseInt(form.duracion.value);
-      const precio = obtenerPrecio(duracion);
       const horaMin = parseTime(hora);
 
       if (!fecha || !hora) {
+        e.preventDefault();
         alert("Debes rellenar todos los campos.");
         return;
       }
 
       if (horaMin < 1020 || horaMin > 1200) {
+        e.preventDefault();
         alert("La hora debe estar entre las 17:00 y las 20:00.");
         return;
       }
 
       if (horaMin > 1170 && duracion > 60) {
+        e.preventDefault();
         alert("Después de las 19:30 solo se permite reservar 1 hora.");
         return;
       }
@@ -103,23 +105,14 @@
       for (const r of reservas) {
         const rMin = parseTime(r.hora);
         if (overlaps(horaMin, duracion, rMin, parseInt(r.duracion))) {
+          e.preventDefault();
           alert("Este horario ya está reservado. Elige otro.");
           return;
         }
       }
 
-      emailjs.send("service_ky4twdx", "template_t7wta3p", {
-        nombre,
-        fecha,
-        hora,
-        duracion: duracion + " min – " + precio
-      }).then(() => {
-        guardarReserva(fecha, hora, duracion);
-        document.getElementById("mensaje").classList.remove("hidden");
-        form.reset();
-      }, (err) => {
-        alert("Error al enviar reserva: " + JSON.stringify(err));
-      });
+      guardarReserva(fecha, hora, duracion);
+      document.getElementById("mensaje").classList.remove("hidden");
     });
   </script>
 </body>
